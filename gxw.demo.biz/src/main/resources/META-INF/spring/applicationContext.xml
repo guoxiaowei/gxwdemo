@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"  
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+    xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="  
+        http://www.springframework.org/schema/beans   
+        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd   
+        http://www.springframework.org/schema/context   
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/data/mongo 
+        http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+		http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+    
+    <context:component-scan base-package="gxw.demo.repository.mybatis.*,gxw.demo.biz.**,gxw.demo.repository.mybatis.UserRepositoryMyBatis"/>
+	
+	<!--********************rdbms*******************-->
+	<!-- flyway -->
+	<bean id="flyway" class="org.flywaydb.core.Flyway" init-method="migrate">
+		<property name="dataSource" ref="testMySQL" />
+	</bean>
+
+	<!-- mybatis -->
+	<bean id="testMySQLSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" depends-on="flyway">
+		<property name="dataSource" ref="testMySQL" />
+		<property name="mapperLocations" value="classpath*:/META-INF/mybatis/**/*Mapper.xml" />
+		<property name="configLocation" value="classpath:/META-INF/mybatis/mybatis.xml" />
+		<property name="typeHandlers" value="#{mybatisTypeHandlerScanner.getTypeHandlers('gxw.demo.mybatis.typeHandler')}" />
+	</bean>
+	<!-- mybatis自动为我们注册Mapper对应的MapperFactoryBean对象 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="gxw.demo.repository.mybatis" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository" />
+		<property name="sqlSessionFactoryBeanName" value="testMySQLSqlSessionFactory" />
+	</bean>
+	
+	<!-- transaction -->
+	<bean id="testMySQLTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="testMySQL" />
+	</bean>
+	<tx:advice transaction-manager="testMySQLTransactionManager" id="testMySQLTxAdvice">
+		<tx:attributes>
+			<tx:method name="*" propagation="REQUIRED" rollback-for="Throwable" />
+		</tx:attributes>
+	</tx:advice>
+	<aop:config>
+		<aop:pointcut expression="execution(* gxw.demo.biz.*.*(..)) or execution(* gxw.demo.repository.mybatis.*.*(..))"
+			id="testMySQLTxMethods" />
+		<aop:advisor pointcut-ref="testMySQLTxMethods" advice-ref="testMySQLTxAdvice" />
+	</aop:config>
+	
+	<!-- Druid和Spring关联监控配置 -->
+ 	<bean id="druid-stat-interceptor"
+	    class="com.alibaba.druid.support.spring.stat.DruidStatInterceptor">
+    </bean>
+	
+	<bean id="druid-stat-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut"
+	    scope="prototype">
+	    <property name="patterns">
+	        <list>
+	            <value>gxw.demo.biz.*</value>
+	            <value>gxw.demo.repository.mybatis.*</value>
+	        </list>
+	    </property>
+	</bean>
+	
+	<aop:config>
+	    <aop:advisor advice-ref="druid-stat-interceptor"
+	        pointcut-ref="druid-stat-pointcut" />
+	</aop:config>
+	
+	<!--********************mongo*******************-->
+	<bean id="defaultMongoTypeMapper" class="org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper">  
+	    <constructor-arg name="typeKey"><null/></constructor-arg>  
+	</bean>
+	
+    <mongo:mapping-converter id="testMongomappingConverter" type-mapper-ref="defaultMongoTypeMapper" db-factory-ref="testMongo" base-package="gxw.demo.domain"/>
+    
+    <mongo:template id="testMongomongoTemplate" db-factory-ref="testMongo" converter-ref="testMongomappingConverter"/>
+        
+    <mongo:repositories mongo-template-ref="testMongomongoTemplate" base-package="gxw.demo.repository.mongo"/>
+
+    <bean id="mongoRepositoryFactory" class="org.springframework.data.mongodb.repository.support.MongoRepositoryFactory">
+    	<constructor-arg ref="testMongomongoTemplate" />
+	</bean>
+	
+	<!--********************datasource*******************-->
+	<!-- Any such nested <beans> element must be declared as the last element in the document. -->
+	<!--rdbms-->
+	<beans profile="dev">
+		<bean id="testMySQL" class="org.springframework.jdbc.datasource.DriverManagerDataSource" >
+			 <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+			 <property name="url" value="jdbc:mysql://localhost:3306/test2"/>
+			 <property name="username" value="dev"/>
+			 <property name="password" value="dev123"/>
+		</bean>
+	</beans>
+	<beans profile="product">
+		<bean id="testMySQL" class="ocean.data.datasource.RdbmsDataSourceFactoryBean">
+			<property name="dataSourceName" value="testMySQL" />
+		</bean>
+	</beans>
+	
+	 
+	<!--mongo-->
+    <beans profile="dev">
+	    <bean name="fongo" class="com.github.fakemongo.Fongo">
+	    	<constructor-arg value="InMemoryMongo" />
+		</bean>
+		<bean id="mongo" factory-bean="fongo" factory-method="getMongo" /> 
+		<mongo:db-factory id="testMongo" mongo-ref="mongo" dbname="test"/> 
+    </beans>
+    
+    <beans profile="product">
+    	 <bean id="mongoUri" class="ocean.data.datasource.MongoUriFactoryBean">
+    	 	<property name="dataSourceName" value="testMongo"/>
+    	 </bean>
+   		 <mongo:db-factory id="testMongo" uri="#{mongoUri}"/> 
+    </beans>
+    
+</beans>

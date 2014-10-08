@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="maven-antrun-" default="main"  >
+<target name="main">
+  <fixcrlf eol="unix" srcdir="D:\wwww\testspace\gxwdemo\gxw.demo.biz/src/main/resources/db/migration" destDir="D:\wwww\testspace\gxwdemo\gxw.demo.biz/target/classes/db/migration" includes="*.sql" fixlast="false"/>
+</target>
+</project>

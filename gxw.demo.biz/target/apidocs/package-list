@@ -1,0 +1,5 @@
+gxw.demo.biz
+gxw.demo.biz.impl
+gxw.demo.domain
+gxw.demo.mybatis.typeHandler
+gxw.demo.repository.mybatis

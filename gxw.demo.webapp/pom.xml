@@ -1,0 +1,75 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>ocean</groupId>
+		<artifactId>gxw.demo.parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>gxw.demo.webapp</artifactId>
+	<packaging>war</packaging>
+	<name>gxw.demo.webapp</name>
+
+	<dependencies>
+		<!-- servlet -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<scope>provided</scope>
+		</dependency>	
+		
+		<!-- ocean -->
+		<dependency>
+			<groupId>ocean</groupId>
+			<artifactId>ocean.config</artifactId>
+			<version>1.0.0</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>ocean</groupId>
+			<artifactId>ocean.security</artifactId>
+			<version>1.0.0</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>ocean</groupId>
+			<artifactId>ocean.ext.mvc</artifactId>
+			<version>1.0.0</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>ocean</groupId>
+			<artifactId>ocean.session</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+				
+		<!-- jackson -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+						
+		<!-- demo -->
+		<dependency>
+			<groupId>ocean</groupId>
+			<artifactId>gxw.demo.rest</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+	
+	<distributionManagement>
+	  <site>
+	      <id>website</id>
+	      <url>scp://${ssh_site}/${project.groupId}/${project.artifactId}</url>
+	  </site>
+	</distributionManagement>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.wildfly.plugins</groupId>
+				<artifactId>wildfly-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>		
+</project>
